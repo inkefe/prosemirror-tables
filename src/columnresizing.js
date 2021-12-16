@@ -4,6 +4,7 @@ import {cellAround, pointsAtCell, setAttr} from "./util"
 import {TableMap} from "./tablemap"
 import {TableView, updateColumns} from "./tableview"
 import {tableNodeTypes} from "./schema"
+import _throttle from 'lodash/throttle';
 
 export const key = new PluginKey("tableColumnResizing")
 
@@ -66,7 +67,6 @@ class ResizeState {
 
 function handleMouseMove(view, event, handleWidth, cellMinWidth, lastColumnResizable) {
   let pluginState = key.getState(view.state)
-
   if (!pluginState.dragging) {
     let target = domCellAround(event.target), cell = -1
     if (target) {
@@ -92,6 +92,7 @@ function handleMouseMove(view, event, handleWidth, cellMinWidth, lastColumnResiz
     }
   }
 }
+handleMouseMove = _throttle(handleMouseMove, 200)
 
 function handleMouseLeave(view) {
   let pluginState = key.getState(view.state)
@@ -122,6 +123,7 @@ function handleMouseDown(view, event, cellMinWidth) {
     displayColumnWidth(view, pluginState.activeHandle, dragged, cellMinWidth)
   }
 
+  move = _throttle(move, 24)
   window.addEventListener("mouseup", finish)
   window.addEventListener("mousemove", move)
   event.preventDefault()
@@ -160,6 +162,7 @@ function edgeCell(view, event, side) {
 }
 
 function draggedWidth(dragging, event, cellMinWidth) {
+  if(!dragging) return cellMinWidth
   let offset = event.clientX - dragging.startX
   return Math.max(cellMinWidth, dragging.startWidth + offset)
 }
@@ -167,6 +170,7 @@ function draggedWidth(dragging, event, cellMinWidth) {
 function updateHandle(view, value) {
   view.dispatch(view.state.tr.setMeta(key, {setHandle: value}))
 }
+window.updateHandle = updateHandle
 
 function updateColumnWidth(view, cell, width) {
   let $cell = view.state.doc.resolve(cell)

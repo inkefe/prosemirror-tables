@@ -11,6 +11,7 @@ import {CellSelection} from "./cellselection"
 import {TableMap} from "./tablemap"
 import {pastedCells, fitSlice, clipCells, insertCells} from "./copypaste"
 import {tableNodeTypes} from "./schema"
+import _throttle from 'lodash/throttle';
 
 export const handleKeyDown = keydownHandler({
   "ArrowLeft": arrow("horiz", -1),
@@ -112,8 +113,7 @@ export function handlePaste(view, _, slice) {
 }
 
 export function handleMouseDown(view, startEvent) {
-  if (startEvent.ctrlKey || startEvent.metaKey) return
-
+  if (startEvent.ctrlKey || startEvent.metaKey || startEvent.button === 2) return
   let startDOMCell = domInCell(view, startEvent.target), $anchor
   if (startEvent.shiftKey && (view.state.selection instanceof CellSelection)) {
     // Adding to an existing cell selection
@@ -153,6 +153,7 @@ export function handleMouseDown(view, startEvent) {
     view.root.removeEventListener("mouseup", stop)
     view.root.removeEventListener("dragstart", stop)
     view.root.removeEventListener("mousemove", move)
+    // view.dom.removeEventListener("contextmenu", showContextMenu)
     if (key.getState(view.state) != null) view.dispatch(view.state.tr.setMeta(key, -1))
   }
 
@@ -168,9 +169,12 @@ export function handleMouseDown(view, startEvent) {
     }
     if ($anchor) setCellSelection($anchor, event)
   }
+  move = _throttle(move, 200)
   view.root.addEventListener("mouseup", stop)
   view.root.addEventListener("dragstart", stop)
   view.root.addEventListener("mousemove", move)
+
+  // view.dom.addEventListener("contextmenu", showContextMenu)
 }
 
 // Check whether the cursor is at the end of a cell (so that further
